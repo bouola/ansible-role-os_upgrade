@@ -1,0 +1,30 @@
+---
+# Validate public role inputs and host prerequisites before making changes.
+- name: "Run validation tasks"
+  ansible.builtin.include_tasks:
+    file: validate.yml
+    apply:
+      tags:
+        - role-os-upgrade-validate
+  tags:
+    - role-os-upgrade-validate
+
+# Hold the self-managed packages, upgrade the others, then release what this run held.
+- name: "Run package upgrade tasks"
+  ansible.builtin.include_tasks:
+    file: upgrade.yml
+    apply:
+      tags:
+        - role-os-upgrade-packages
+  tags:
+    - role-os-upgrade-packages
+
+# Report a pending reboot, or reboot when os_upgrade_reboot is true.
+- name: "Run reboot tasks"
+  ansible.builtin.include_tasks:
+    file: reboot.yml
+    apply:
+      tags:
+        - role-os-upgrade-reboot
+  tags:
+    - role-os-upgrade-reboot

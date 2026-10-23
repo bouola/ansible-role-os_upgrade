@@ -1,0 +1,24 @@
+---
+# "| bool" and "| int": the validation tasks may be skipped by tags, and extra vars given as key=value are strings.
+- name: "Check whether a reboot is required"
+  ansible.builtin.stat:
+    path: "{{ _os_upgrade_reboot_required_file }}"
+  register: _os_upgrade_reboot_required
+
+- name: "Report the pending reboot"
+  ansible.builtin.debug:
+    msg: >-
+      {{ inventory_hostname }} needs a reboot to load the updates. Reboot it in a maintenance window, or run the
+      role with os_upgrade_reboot set to true.
+  when:
+    - _os_upgrade_reboot_required.stat.exists
+    - not (os_upgrade_reboot | bool)
+
+- name: "Reboot the host"
+  ansible.builtin.reboot:
+    reboot_timeout: "{{ os_upgrade_reboot_timeout | int }}"
+    msg: "Reboot initiated by the bouola.os_upgrade Ansible role"
+  become: true
+  when:
+    - _os_upgrade_reboot_required.stat.exists
+    - os_upgrade_reboot | bool

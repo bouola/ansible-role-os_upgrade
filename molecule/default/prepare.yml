@@ -1,0 +1,27 @@
+---
+- name: "Prepare"
+  hosts: all
+  become: true
+  tasks:
+    - name: "Install the packages used by the scenario"
+      ansible.builtin.apt:
+        name:
+          - "cron"
+          - "less"
+        update_cache: true
+        state: present
+
+    # A package held before the run must still be held after it.
+    - name: "Hold a package before the run"
+      ansible.builtin.dpkg_selections:
+        name: "less"
+        selection: hold
+
+    # The role must report this pending reboot without rebooting: the scenario keeps os_upgrade_reboot false.
+    - name: "Flag a pending reboot"
+      ansible.builtin.copy:
+        dest: "/var/run/reboot-required"
+        content: "*** System restart required ***\n"
+        owner: "root"
+        group: "root"
+        mode: "0644"
