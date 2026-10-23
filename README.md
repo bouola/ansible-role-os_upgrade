@@ -58,6 +58,9 @@ os_upgrade_held_packages:
   - "gitlab-runner"
 ```
 
+`os_upgrade_reboot` and `os_upgrade_reboot_timeout` also accept the strings that `-e key=value` passes, for
+example `-e os_upgrade_reboot=true`.
+
 Preview the updates without installing them:
 
 ```bash

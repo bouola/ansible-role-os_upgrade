@@ -4,5 +4,16 @@ _os_upgrade_types:
   - "full"
   - "dist"
 
+# Strings accepted for os_upgrade_reboot: extra vars given as key=value always arrive as strings.
+_os_upgrade_boolean_strings:
+  - "true"
+  - "false"
+  - "yes"
+  - "no"
+  - "on"
+  - "off"
+  - "1"
+  - "0"
+
 # File that Debian and Ubuntu packages create when an update needs a reboot to take effect.
 _os_upgrade_reboot_required_file: "/var/run/reboot-required"

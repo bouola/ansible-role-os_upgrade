@@ -3,6 +3,9 @@
   hosts: all
   become: true
   vars:
+    # Strings, as given by "-e key=value": "false" must not reboot the host.
+    os_upgrade_reboot: "false"
+    os_upgrade_reboot_timeout: "600"
     os_upgrade_held_packages:
       - "cron"
       - "less"
