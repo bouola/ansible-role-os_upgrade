@@ -1,0 +1,49 @@
+---
+- name: "Upgrade the packages"
+  become: true
+  block:
+    # apt-mark has no module equivalent; the list only reads the dpkg state.
+    - name: "List the packages already held"
+      ansible.builtin.command:
+        argv:
+          - apt-mark
+          - showhold
+      register: _os_upgrade_already_held
+      changed_when: false
+      check_mode: false
+
+    - name: "Gather the installed packages"
+      ansible.builtin.package_facts:
+        manager: apt
+
+    # The hold only lasts for this run and is released in "always": the net dpkg state does not change.
+    - name: "Hold the packages that have their own upgrade procedure"
+      ansible.builtin.dpkg_selections:
+        name: "{{ _os_upgrade_package }}"
+        selection: hold
+      changed_when: false
+      loop: "{{ os_upgrade_held_packages | select('in', ansible_facts['packages']) | list }}"
+      loop_control:
+        loop_var: _os_upgrade_package
+        label: "{{ _os_upgrade_package }}"
+
+    - name: "Upgrade the other packages"
+      ansible.builtin.apt:
+        upgrade: "{{ os_upgrade_type }}"
+        update_cache: true
+
+  always:
+    # Release only what this run held: a package held before the run stays held.
+    - name: "Release the packages held for the upgrade"
+      ansible.builtin.dpkg_selections:
+        name: "{{ _os_upgrade_package }}"
+        selection: install
+      changed_when: false
+      loop: >-
+        {{ os_upgrade_held_packages
+        | select('in', ansible_facts['packages'] | default({}))
+        | reject('in', _os_upgrade_already_held.stdout_lines | default([]))
+        | list }}
+      loop_control:
+        loop_var: _os_upgrade_package
+        label: "{{ _os_upgrade_package }}"

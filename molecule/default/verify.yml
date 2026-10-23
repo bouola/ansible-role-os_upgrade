@@ -1,0 +1,33 @@
+---
+- name: "Verify"
+  hosts: all
+  become: true
+  tasks:
+    - name: "Read the held packages"
+      ansible.builtin.command:
+        argv:
+          - apt-mark
+          - showhold
+      register: _os_upgrade_verify_held
+      changed_when: false
+
+    - name: "Check that the run released what it held and kept what was held before"
+      ansible.builtin.assert:
+        that:
+          - "'less' in _os_upgrade_verify_held.stdout_lines"
+          - "'cron' not in _os_upgrade_verify_held.stdout_lines"
+          - "'package-that-is-not-installed' not in _os_upgrade_verify_held.stdout_lines"
+        fail_msg: >-
+          Unexpected held packages: {{ _os_upgrade_verify_held.stdout_lines | join(', ') }}.
+          less was held before the run and must stay held; cron must be released.
+
+    - name: "Read the reboot flag"
+      ansible.builtin.stat:
+        path: "/var/run/reboot-required"
+      register: _os_upgrade_verify_reboot_flag
+
+    - name: "Check that the role did not reboot the host"
+      ansible.builtin.assert:
+        that:
+          - _os_upgrade_verify_reboot_flag.stat.exists
+        fail_msg: "The reboot flag disappeared: the role rebooted the host although os_upgrade_reboot is false."

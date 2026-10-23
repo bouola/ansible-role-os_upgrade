@@ -1,0 +1,12 @@
+---
+- name: "Converge"
+  hosts: all
+  become: true
+  vars:
+    os_upgrade_held_packages:
+      - "cron"
+      - "less"
+      - "package-that-is-not-installed"
+
+  roles:
+    - role: "bouola.os_upgrade"

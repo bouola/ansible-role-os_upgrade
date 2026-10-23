@@ -1,0 +1,20 @@
+---
+- name: "Validate supported operating system"
+  ansible.builtin.assert:
+    that:
+      - ansible_facts["os_family"] == "Debian"
+    fail_msg: >-
+      This role supports Debian and Ubuntu only.
+      Current OS family is {{ ansible_facts["os_family"] | default('<undefined>') }}.
+
+- name: "Validate upgrade settings"
+  ansible.builtin.assert:
+    that:
+      - os_upgrade_type in _os_upgrade_types
+      - os_upgrade_held_packages is sequence and os_upgrade_held_packages is not string
+      - os_upgrade_held_packages | reject('string') | list | length == 0
+      - os_upgrade_reboot is boolean
+      - os_upgrade_reboot_timeout is integer and os_upgrade_reboot_timeout > 0
+    fail_msg: >-
+      Invalid upgrade settings. type must be one of {{ _os_upgrade_types | join(', ') }}, held_packages must be a
+      list of package names, reboot must be a boolean, and reboot_timeout must be an integer > 0.

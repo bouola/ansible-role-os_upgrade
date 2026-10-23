@@ -1,0 +1,8 @@
+---
+_os_upgrade_types:
+  - "safe"
+  - "full"
+  - "dist"
+
+# File that Debian and Ubuntu packages create when an update needs a reboot to take effect.
+_os_upgrade_reboot_required_file: "/var/run/reboot-required"

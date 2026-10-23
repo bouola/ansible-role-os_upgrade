@@ -1,0 +1,24 @@
+---
+galaxy_info:
+  role_name: "os_upgrade"
+  namespace: "bouola"
+  description: "Apply Debian security and package updates on demand, keeping self-managed packages on their own procedure"
+  author: "bouola"
+  license: "MIT"
+  min_ansible_version: "2.15"
+  galaxy_tags:
+    - "apt"
+    - "debian"
+    - "ubuntu"
+    - "updates"
+    - "security"
+    - "patching"
+  platforms:
+    - name: "Debian"
+      versions:
+        - "bookworm"
+        - "trixie"
+    - name: "Ubuntu"
+      versions:
+        - "jammy"
+        - "noble"
