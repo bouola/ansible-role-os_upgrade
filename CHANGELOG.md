@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/bouola/ansible-role-os_upgrade/compare/v1.0.0...v1.0.1) (2026-10-24)
+
+
+### Bug Fixes
+
+* apply package holds in check mode and hold no package by default ([#2](https://github.com/bouola/ansible-role-os_upgrade/issues/2)) ([df3f04a](https://github.com/bouola/ansible-role-os_upgrade/commit/df3f04a65ef36928de8c760dbfb9e5124aeb3cfd))
+
 # 1.0.0 (2026-10-23)
 
 
