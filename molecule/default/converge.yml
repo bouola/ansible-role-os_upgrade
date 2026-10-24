@@ -1,5 +1,6 @@
 ---
-- name: "Converge"
+# A check-mode run first: the preview must leave the held package out, like the real run that follows.
+- name: "Converge in check mode"
   hosts: all
   become: true
   vars:
@@ -8,7 +9,39 @@
     os_upgrade_reboot_timeout: "600"
     os_upgrade_held_packages:
       - "cron"
-      - "less"
+      - "os-upgrade-held"
+      - "package-that-is-not-installed"
+  tasks:
+    - name: "Preview the upgrade"
+      ansible.builtin.import_role:
+        name: "bouola.os_upgrade"
+      check_mode: true
+
+    - name: "Check that the preview leaves the held package out"
+      ansible.builtin.assert:
+        that:
+          - "'Inst os-upgrade-held ' not in _os_upgrade_apt.stdout"
+        fail_msg: >-
+          The check-mode preview upgrades os-upgrade-held although it is listed in os_upgrade_held_packages.
+
+    # On the idempotence run os-upgrade-free is already 2.0, so the preview has nothing to show for it.
+    - name: "Check that the preview upgrades the free package"
+      ansible.builtin.assert:
+        that:
+          - "'Inst os-upgrade-free ' in _os_upgrade_apt.stdout"
+        fail_msg: >-
+          The check-mode preview does not upgrade os-upgrade-free, which is not held.
+      when: ansible_facts['packages']['os-upgrade-free'][0]['version'] == '1.0'
+
+- name: "Converge"
+  hosts: all
+  become: true
+  vars:
+    os_upgrade_reboot: "false"
+    os_upgrade_reboot_timeout: "600"
+    os_upgrade_held_packages:
+      - "cron"
+      - "os-upgrade-held"
       - "package-that-is-not-installed"
 
   roles:

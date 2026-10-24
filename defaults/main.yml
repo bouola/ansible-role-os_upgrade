@@ -3,15 +3,10 @@
 # remove packages to resolve new dependencies (apt full-upgrade), "dist" is the apt-get dist-upgrade equivalent.
 os_upgrade_type: "safe"
 
-# Packages that keep their own upgrade procedure, for example a pinned Docker Engine or GitLab version. They are
-# held during the upgrade and released afterwards, so that procedure can still install the version it pins. A
+# Packages that keep their own upgrade procedure, for example a GitLab version pinned by its own playbook. They
+# are held during the upgrade and released afterwards, so that procedure can still install the version it pins. A
 # package that was already held before the run stays held. Packages that are not installed are ignored.
-os_upgrade_held_packages:
-  - "docker-ce"
-  - "docker-ce-cli"
-  - "containerd.io"
-  - "docker-buildx-plugin"
-  - "docker-compose-plugin"
+os_upgrade_held_packages: []
 
 # Reboot the host when the upgrade requires it (/var/run/reboot-required exists). When false, the role only
 # reports the pending reboot.

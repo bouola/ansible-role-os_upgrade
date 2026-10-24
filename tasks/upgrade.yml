@@ -16,12 +16,14 @@
       ansible.builtin.package_facts:
         manager: apt
 
-    # The hold only lasts for this run and is released in "always": the net dpkg state does not change.
+    # The hold only lasts for this run and is released in "always": the net dpkg state does not change. It also
+    # applies in check mode, so the simulated upgrade leaves the held packages out like the real run.
     - name: "Hold the packages that have their own upgrade procedure"
       ansible.builtin.dpkg_selections:
         name: "{{ _os_upgrade_package }}"
         selection: hold
       changed_when: false
+      check_mode: false
       loop: "{{ os_upgrade_held_packages | select('in', ansible_facts['packages']) | list }}"
       loop_control:
         loop_var: _os_upgrade_package
@@ -31,6 +33,7 @@
       ansible.builtin.apt:
         upgrade: "{{ os_upgrade_type }}"
         update_cache: true
+      register: _os_upgrade_apt
 
   always:
     # Release only what this run held: a package held before the run stays held.
@@ -39,6 +42,7 @@
         name: "{{ _os_upgrade_package }}"
         selection: install
       changed_when: false
+      check_mode: false
       loop: >-
         {{ os_upgrade_held_packages
         | select('in', ansible_facts['packages'] | default({}))

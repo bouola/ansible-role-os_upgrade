@@ -2,20 +2,99 @@
 - name: "Prepare"
   hosts: all
   become: true
+  vars:
+    _os_upgrade_test_repo: "/srv/os-upgrade-test-repo"
+    _os_upgrade_test_build: "/tmp/os-upgrade-test-build"
   tasks:
     - name: "Install the packages used by the scenario"
       ansible.builtin.apt:
         name:
+          - "apt-utils"
           - "cron"
           - "less"
         update_cache: true
         state: present
+
+    # Without aptitude the apt module runs apt-get, whose simulation output ("Inst <package>") converge checks.
+    - name: "Remove aptitude"
+      ansible.builtin.apt:
+        name: "aptitude"
+        state: absent
 
     # A package held before the run must still be held after it.
     - name: "Hold a package before the run"
       ansible.builtin.dpkg_selections:
         name: "less"
         selection: hold
+
+    # Two test packages, each installed in 1.0 with 2.0 available from a local repository: the role must upgrade
+    # os-upgrade-free and keep os-upgrade-held, which the converge playbook lists in os_upgrade_held_packages.
+    - name: "Create the test package build directories"
+      ansible.builtin.file:
+        path: "{{ _os_upgrade_test_build }}/{{ item.0 }}-{{ item.1 }}/DEBIAN"
+        state: directory
+        mode: "0755"
+      loop: "{{ ['os-upgrade-free', 'os-upgrade-held'] | product(['1.0', '2.0']) | list }}"
+      loop_control:
+        label: "{{ item.0 }} {{ item.1 }}"
+
+    - name: "Write the test package control files"
+      ansible.builtin.copy:
+        dest: "{{ _os_upgrade_test_build }}/{{ item.0 }}-{{ item.1 }}/DEBIAN/control"
+        content: |
+          Package: {{ item.0 }}
+          Version: {{ item.1 }}
+          Architecture: all
+          Maintainer: Bouola <noreply@bouola.com>
+          Description: Test package of the bouola.os_upgrade scenario
+        mode: "0644"
+      loop: "{{ ['os-upgrade-free', 'os-upgrade-held'] | product(['1.0', '2.0']) | list }}"
+      loop_control:
+        label: "{{ item.0 }} {{ item.1 }}"
+
+    - name: "Create the local repository directory"
+      ansible.builtin.file:
+        path: "{{ _os_upgrade_test_repo }}"
+        state: directory
+        mode: "0755"
+
+    # Version 1.0 stays outside the repository; version 2.0 is the update the repository offers.
+    - name: "Build the test packages"
+      ansible.builtin.command:
+        argv:
+          - dpkg-deb
+          - --build
+          - "{{ _os_upgrade_test_build }}/{{ item.0 }}-{{ item.1 }}"
+          - "{{ (_os_upgrade_test_repo if item.1 == '2.0' else _os_upgrade_test_build) }}/{{ item.0 }}_{{ item.1 }}_all.deb"
+        creates: "{{ (_os_upgrade_test_repo if item.1 == '2.0' else _os_upgrade_test_build) }}/{{ item.0 }}_{{ item.1 }}_all.deb"
+      loop: "{{ ['os-upgrade-free', 'os-upgrade-held'] | product(['1.0', '2.0']) | list }}"
+      loop_control:
+        label: "{{ item.0 }} {{ item.1 }}"
+
+    - name: "Index the local repository"
+      ansible.builtin.shell:
+        cmd: "apt-ftparchive packages . > Packages"
+        chdir: "{{ _os_upgrade_test_repo }}"
+        creates: "{{ _os_upgrade_test_repo }}/Packages"
+
+    - name: "Add the local repository"
+      ansible.builtin.copy:
+        dest: "/etc/apt/sources.list.d/os-upgrade-test.list"
+        content: "deb [trusted=yes] file:{{ _os_upgrade_test_repo }} ./\n"
+        mode: "0644"
+
+    - name: "Install version 1.0 of the test packages"
+      ansible.builtin.apt:
+        deb: "{{ _os_upgrade_test_build }}/{{ item }}_1.0_all.deb"
+      loop:
+        - "os-upgrade-free"
+        - "os-upgrade-held"
+      loop_control:
+        label: "{{ item }}"
+
+    - name: "Refresh the package lists"
+      ansible.builtin.apt:
+        update_cache: true
 
     # The role must report this pending reboot without rebooting: the scenario keeps os_upgrade_reboot false.
     - name: "Flag a pending reboot"
