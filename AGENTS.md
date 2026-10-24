@@ -7,8 +7,8 @@ These instructions apply repo-wide unless the user gives a more specific request
 ## Intent
 
 This is the `bouola.os_upgrade` Ansible role, published as open source. It applies Debian and Ubuntu package
-updates on demand, in a maintenance window, and keeps self-managed packages (for example a pinned Docker Engine
-or GitLab version) on their own upgrade procedure.
+updates on demand, in a maintenance window, and keeps self-managed packages (for example a GitLab version
+pinned by its own playbook) on their own upgrade procedure.
 
 The role is meant to run only when asked, for example from a play tagged `never` and `os_upgrade`. It is not a
 replacement for unattended-upgrades and never runs as part of a normal deployment.
@@ -39,7 +39,8 @@ replacement for unattended-upgrades and never runs as part of a normal deploymen
 ## Safety
 
 - Held packages are held for the duration of the run only and released in an `always` section, even when the
-  upgrade fails. A package that was held before the run must stay held: never release it.
+  upgrade fails. Holding and releasing run in check mode too (`check_mode: false`), so the preview matches the
+  real run. A package that was held before the run must stay held: never release it.
 - The default upgrade type is `safe`: it never installs or removes a package. `full` and `dist` are explicit
   choices of the user.
 - Never reboot unless `os_upgrade_reboot` is true. The default only reports a pending reboot.

@@ -16,10 +16,24 @@
         that:
           - "'less' in _os_upgrade_verify_held.stdout_lines"
           - "'cron' not in _os_upgrade_verify_held.stdout_lines"
+          - "'os-upgrade-held' not in _os_upgrade_verify_held.stdout_lines"
           - "'package-that-is-not-installed' not in _os_upgrade_verify_held.stdout_lines"
         fail_msg: >-
           Unexpected held packages: {{ _os_upgrade_verify_held.stdout_lines | join(', ') }}.
-          less was held before the run and must stay held; cron must be released.
+          less was held before the run and must stay held; cron and os-upgrade-held must be released.
+
+    - name: "Gather the installed packages"
+      ansible.builtin.package_facts:
+        manager: apt
+
+    - name: "Check that the run upgraded the free package and kept the held one"
+      ansible.builtin.assert:
+        that:
+          - ansible_facts['packages']['os-upgrade-free'][0]['version'] == '2.0'
+          - ansible_facts['packages']['os-upgrade-held'][0]['version'] == '1.0'
+        fail_msg: >-
+          os-upgrade-free is {{ ansible_facts['packages']['os-upgrade-free'][0]['version'] }} (expected 2.0) and
+          os-upgrade-held is {{ ansible_facts['packages']['os-upgrade-held'][0]['version'] }} (expected 1.0).
 
     - name: "Read the reboot flag"
       ansible.builtin.stat:
